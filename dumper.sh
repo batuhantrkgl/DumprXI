@@ -68,6 +68,11 @@ if echo "${PROJECT_DIR}" | grep " "; then
 	sleep 1s && exit 1
 fi
 
+# Load .env file if it exists
+if [[ -f "${PROJECT_DIR}/.env" ]]; then
+	export $(grep -v '^#' "${PROJECT_DIR}/.env" | xargs)
+fi
+
 # Sanitize And Generate Folders
 INPUTDIR="${PROJECT_DIR}"/input		# Firmware Download/Preload Directory
 UTILSDIR="${PROJECT_DIR}"/utils		# Contains Supportive Programs
@@ -1166,16 +1171,26 @@ split_files(){
 	rm -rf "${TMPDIR}" 2>/dev/null
 }
 
-if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
-	GITHUB_TOKEN=$(< "${PROJECT_DIR}"/.github_token)	# Write Your Github Token In a Text File
-	[[ -z "$(git config --get user.email)" ]] && git config user.email "guptasushrut@gmail.com"
-	[[ -z "$(git config --get user.name)" ]] && git config user.name "Sushrut1101"
-	if [[ -s "${PROJECT_DIR}"/.github_orgname ]]; then
-		GIT_ORG=$(< "${PROJECT_DIR}"/.github_orgname)	# Set Your Github Organization Name
-	else
-		GIT_USER="$(git config --get user.name)"
-		GIT_ORG="${GIT_USER}"				# Otherwise, Your Username will be used
+if [[ -n "${GIT_ORG}" ]]; then
+	# Get GitHub user from git config
+	GIT_USER="$(git config --get user.name)"
+	
+	# Use git username if GIT_ORG not set in .env
+	if [[ -z "${GIT_ORG}" ]]; then
+		GIT_ORG="${GIT_USER}"				# Use git username if no organization specified
 	fi
+	
+	# Create GitHub repository early, before any operations
+	printf "\nCreating GitHub repository: %s/%s\n" "${GIT_ORG}" "${repo}"
+	if [[ "${GIT_ORG}" == "${GIT_USER}" ]]; then
+		gh repo create "${repo}" --description "${description}" --public 2>/dev/null || true
+	else
+		gh repo create "${GIT_ORG}/${repo}" --description "${description}" --public 2>/dev/null || true
+	fi
+	
+	# Set repository topics using GitHub CLI
+	gh repo edit "${GIT_ORG}/${repo}" --add-topic "${platform},${manufacturer},${top_codename},firmware,dump" 2>/dev/null || true
+	
 	# Check if already dumped or not
 	curl -sf "https://raw.githubusercontent.com/${GIT_ORG}/${repo}/${branch}/all_files.txt" 2>/dev/null && { printf "Firmware already dumped!\nGo to https://github.com/%s/%s/tree/%s\n" "${GIT_ORG}" "${repo}" "${branch}" && exit 1; }
 	# Remove The Journal File Inside System/Vendor
@@ -1188,12 +1203,6 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}"; }
 	find . \( -name "*sensetime*" -o -name "*.lic" \) | cut -d'/' -f'2-' >| .gitignore
 	[[ ! -s .gitignore ]] && rm .gitignore
-	if [[ "${GIT_ORG}" == "${GIT_USER}" ]]; then
-		curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -d '{"name": "'"${repo}"'", "description": "'"${description}"'"}' "https://api.github.com/user/repos" >/dev/null 2>&1
-	else
-		curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" -d '{ "name": "'"${repo}"'", "description": "'"${description}"'"}' "https://api.github.com/orgs/${GIT_ORG}/repos" >/dev/null 2>&1
-	fi
-	curl -s -X PUT -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.mercy-preview+json" -d '{ "names": ["'"${platform}"'","'"${manufacturer}"'","'"${top_codename}"'","firmware","dump"]}' "https://api.github.com/repos/${GIT_ORG}/${repo}/topics" 	# Update Repository Topics
 	
 	# Commit and Push
 	printf "\nPushing to %s via SSH...\nBranch:%s\n" "git@github.com:${GIT_ORG}/${repo}.git" "${branch}"
@@ -1203,12 +1212,11 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	sleep 1
 	
 	# Telegram channel post
-	if [[ -s "${PROJECT_DIR}"/.tg_token ]]; then
-		TG_TOKEN=$(< "${PROJECT_DIR}"/.tg_token)
-		if [[ -s "${PROJECT_DIR}"/.tg_chat ]]; then		# TG Channel ID
-			CHAT_ID=$(< "${PROJECT_DIR}"/.tg_chat)
-		else
+	if [[ -n "${TG_TOKEN}" ]]; then
+		if [[ -z "${TG_CHAT}" ]]; then		# Use default channel if not specified
 			CHAT_ID="@DumprXIDumps"
+		else
+			CHAT_ID="${TG_CHAT}"
 		fi
 		printf "Sending telegram notification...\n"
 		printf "<b>Brand: %s</b>" "${brand}" >| "${OUTDIR}"/tg.html
@@ -1332,12 +1340,11 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 	printf "\n"
 
 	# Telegram channel post
-	if [[ -s "${PROJECT_DIR}"/.tg_token ]]; then
-		TG_TOKEN=$(< "${PROJECT_DIR}"/.tg_token)
-		if [[ -s "${PROJECT_DIR}"/.tg_chat ]]; then		# TG Channel ID
-			CHAT_ID=$(< "${PROJECT_DIR}"/.tg_chat)
-		else
+	if [[ -n "${TG_TOKEN}" ]]; then
+		if [[ -z "${TG_CHAT}" ]]; then		# Use default channel if not specified
 			CHAT_ID="@DumprXIDumps"
+		else
+			CHAT_ID="${TG_CHAT}"
 		fi
 		printf "Sending telegram notification...\n"
 		printf "<b>Brand: %s</b>" "${brand}" >| "${OUTDIR}"/tg.html

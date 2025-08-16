@@ -1,6 +1,6 @@
 <div align="center">
 
-  <h1>DumprX</h1>
+  <h1>DumprXI</h1>
 
   <h4>Based Upon Phoenix Firmware Dumper from DroidDumps, with some Changes and Improvements</h4>
 
@@ -60,9 +60,19 @@ Help Context:
 
 ## How to use it to Upload the Dump in GitHub
 
-- Copy your GITHUB_TOKEN in a file named .github_token and add your GitHub Organization name in another file named .github_orgname inside the project directory.
-  - If only Token is given but Organization is not, your Git Username will be used.
-- Copy your Telegram Token in a file named .tg_token and Telegram Chat/Channel ID in another file named .tg_chat file if you want to publish the uploading info in Telegram.
+- Create a `.env` file in the project directory with the following variables:
+  ```bash
+  # GitHub Configuration
+  GIT_ORG=your-github-username-or-organization
+  
+  # Telegram Configuration (Optional)
+  TG_TOKEN=your-telegram-bot-token
+  TG_CHAT=your-telegram-chat-id-or-channel
+  ```
+  - If no organization is specified, your GitHub username will be used automatically
+  - Telegram configuration is optional and only needed if you want upload notifications
+
+**Note:** GitHub authentication is now handled automatically through SSH keys and GitHub CLI, which are configured during the setup process. No manual token management is required.
 
 ## Main Scripture Credit
 
