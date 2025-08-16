@@ -16,12 +16,12 @@ function __bannerTop() {
 	local NC='\033[0m'
 	echo -e \
 	${GREEN}"
-	██████╗░██╗░░░██╗███╗░░░███╗██████╗░██████╗░██╗░░██╗
-	██╔══██╗██║░░░██║████╗░████║██╔══██╗██╔══██╗╚██╗██╔╝
-	██║░░██║██║░░░██║██╔████╔██║██████╔╝██████╔╝░╚███╔╝░
-	██║░░██║██║░░░██║██║╚██╔╝██║██╔═══╝░██╔══██╗░██╔██╗░
-	██████╔╝╚██████╔╝██║░╚═╝░██║██║░░░░░██║░░██║██╔╝╚██╗
-	╚═════╝░░╚═════╝░╚═╝░░░░░╚═╝╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚═╝
+	██████╗░██╗░░░██╗███╗░░░███╗██████╗░██████╗░██╗░░██╗██╗
+	██╔══██╗██║░░░██║████╗░████║██╔══██╗██╔══██╗╚██╗██╔╝██║
+	██║░░██║██║░░░██║██╔████╔██║██████╔╝██████╔╝░╚███╔╝░██║
+	██║░░██║██║░░░██║██║╚██╔╝██║██╔═══╝░██╔══██╗░██╔██╗░██║
+	██████╔╝╚██████╔╝██║░╚═╝░██║██║░░░░░██║░░██║██╔╝╚██╗██║
+	╚═════╝░░╚═════╝░╚═╝░░░░░╚═╝╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝
 	"${NC}
 }
 
@@ -87,7 +87,7 @@ EXTERNAL_TOOLS=(
 
 for tool_slug in "${EXTERNAL_TOOLS[@]}"; do
 	if ! [[ -d "${UTILSDIR}"/"${tool_slug#*/}" ]]; then
-		git clone -q https://github.com/"${tool_slug}".git "${UTILSDIR}"/"${tool_slug#*/}"
+		git clone -q git@github.com:"${tool_slug}".git "${UTILSDIR}"/"${tool_slug#*/}"
 	else
 		git -C "${UTILSDIR}"/"${tool_slug#*/}" pull
 	fi
@@ -1183,8 +1183,8 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	split_files 62M 47M
 	printf "\nFinal Repository Should Look Like...\n" && ls -lAog
 	printf "\n\nStarting Git Init...\n"
-	git init		# Insure Your Github Authorization Before Running This Script
-	git config --global http.postBuffer 524288000		# A Simple Tuning to Get Rid of curl (18) error while `git push`
+	git init		# Ensure Your GitHub SSH Authorization Before Running This Script
+	git config --global http.postBuffer 524288000		# HTTP buffer configuration for API calls
 	git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}"; }
 	find . \( -name "*sensetime*" -o -name "*.lic" \) | cut -d'/' -f'2-' >| .gitignore
 	[[ ! -s .gitignore ]] && rm .gitignore
@@ -1196,9 +1196,9 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	curl -s -X PUT -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.mercy-preview+json" -d '{ "names": ["'"${platform}"'","'"${manufacturer}"'","'"${top_codename}"'","firmware","dump"]}' "https://api.github.com/repos/${GIT_ORG}/${repo}/topics" 	# Update Repository Topics
 	
 	# Commit and Push
-	printf "\nPushing to %s via HTTPS...\nBranch:%s\n" "https://github.com/${GIT_ORG}/${repo}.git" "${branch}"
+	printf "\nPushing to %s via SSH...\nBranch:%s\n" "git@github.com:${GIT_ORG}/${repo}.git" "${branch}"
 	sleep 1
-	git remote add origin https://${GITHUB_TOKEN}@github.com/${GIT_ORG}/${repo}.git
+	git remote add origin git@github.com:${GIT_ORG}/${repo}.git
 	commit_and_push
 	sleep 1
 	
@@ -1208,7 +1208,7 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 		if [[ -s "${PROJECT_DIR}"/.tg_chat ]]; then		# TG Channel ID
 			CHAT_ID=$(< "${PROJECT_DIR}"/.tg_chat)
 		else
-			CHAT_ID="@DumprXDumps"
+			CHAT_ID="@DumprXIDumps"
 		fi
 		printf "Sending telegram notification...\n"
 		printf "<b>Brand: %s</b>" "${brand}" >| "${OUTDIR}"/tg.html
@@ -1337,7 +1337,7 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 		if [[ -s "${PROJECT_DIR}"/.tg_chat ]]; then		# TG Channel ID
 			CHAT_ID=$(< "${PROJECT_DIR}"/.tg_chat)
 		else
-			CHAT_ID="@DumprXDumps"
+			CHAT_ID="@DumprXIDumps"
 		fi
 		printf "Sending telegram notification...\n"
 		printf "<b>Brand: %s</b>" "${brand}" >| "${OUTDIR}"/tg.html
